@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Greggs.Products.Api.Models;
+﻿using Greggs.Products.Api.Enums;
+using Greggs.Products.Api.Repo;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
 
 namespace Greggs.Products.Api.Controllers;
 
@@ -11,30 +11,42 @@ namespace Greggs.Products.Api.Controllers;
 [Route("[controller]")]
 public class ProductController : ControllerBase
 {
-    private static readonly string[] Products = new[]
-    {
-        "Sausage Roll", "Vegan Sausage Roll", "Steak Bake", "Yum Yum", "Pink Jammie"
-    };
-
     private readonly ILogger<ProductController> _logger;
+    private readonly IRepository _repository;
 
-    public ProductController(ILogger<ProductController> logger)
+    public ProductController(
+        ILogger<ProductController> logger,
+        IRepository repository)
     {
         _logger = logger;
+        _repository = repository;
     }
 
-    [HttpGet]
-    public IEnumerable<Product> Get(int pageStart = 0, int pageSize = 5)
+    [HttpGet("latest")]
+    public async Task<IActionResult> Get(int pageStart = 0, int pageSize = 5)
     {
-        if (pageSize > Products.Length)
-            pageSize = Products.Length;
+        try
+        {
+            var results = await _repository.GetProductsAsync(pageStart, pageSize);
+            return Ok(results);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = "An unexpected error occurred.", Details = ex.Message });
+        }
+    }
 
-        var rng = new Random();
-        return Enumerable.Range(1, pageSize).Select(index => new Product
-            {
-                PriceInPounds = rng.Next(0, 10),
-                Name = Products[rng.Next(Products.Length)]
-            })
-            .ToArray();
+    [HttpGet("by-currency")]
+    public async Task<IActionResult> GetByCurrency(Employee employee, Currency currency = Currency.GBP, int pageStart = 0, int pageSize = 5)
+    {
+        try
+        {
+            var results = await _repository.GetProductsByCurrencyAsync(employee, currency, pageStart, pageSize);
+            return Ok(results);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = "An unexpected error occurred.", Details = ex.Message });
+        }
     }
 }

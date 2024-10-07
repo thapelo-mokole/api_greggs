@@ -1,8 +1,10 @@
+using Greggs.Products.Api.Enums;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Greggs.Products.Api.DataAccess;
 
-public interface IDataAccess<out T>
+public interface IDataAccess<T>
 {
-    IEnumerable<T> List(int? pageStart, int? pageSize);
+    Task<IEnumerable<T>> ListAsync(int? pageStart, int? pageSize, Currency? currency = null);
 }
